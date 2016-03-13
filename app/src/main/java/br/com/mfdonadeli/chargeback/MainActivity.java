@@ -3,11 +3,13 @@ package br.com.mfdonadeli.chargeback;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Html;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -42,6 +44,9 @@ public class MainActivity extends AppCompatActivity implements Constants {
     private TextView txtDescription;
     private Button mBtnPrimaryAction;
     private Button mBtnSecondaryAction;
+
+    private btnClick firstClickListener;
+    private btnClick secondClickListener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,10 +59,12 @@ public class MainActivity extends AppCompatActivity implements Constants {
         txtDescription = (TextView) findViewById(R.id.txtDescription);
 
         mBtnPrimaryAction = (Button) findViewById(R.id.btnPrimaryAction);
-        mBtnPrimaryAction.setOnClickListener(new btnClick(mPrimaryActionAction));
+        firstClickListener = new btnClick();
+        mBtnPrimaryAction.setOnClickListener(firstClickListener);
 
         mBtnSecondaryAction = (Button) findViewById(R.id.btnSecondaryAction);
-        mBtnSecondaryAction.setOnClickListener(new btnClick(mSecondaryActionAction));
+        secondClickListener = new btnClick();
+        mBtnSecondaryAction.setOnClickListener(secondClickListener);
     }
 
     private void getFirstRequest() {
@@ -72,7 +79,17 @@ public class MainActivity extends AppCompatActivity implements Constants {
         txtTitle.setText(Html.fromHtml(mTitle));
         txtDescription.setText(Html.fromHtml(mDescription));
         mBtnPrimaryAction.setText(mPrimaryActionTitle);
+        firstClickListener.setAction(mPrimaryActionAction);
         mBtnSecondaryAction.setText(mSecondaryActionTitle);
+        secondClickListener.setAction(mSecondaryActionAction);
+
+        if(mPrimaryActionAction.equals("continue"))
+        {
+            mBtnPrimaryAction.setTextSize(TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.enabled_font_size));
+            mBtnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.enabled_purple));
+            mBtnSecondaryAction.setTextColor(ContextCompat.getColor(this, R.color.disabled_gray));
+        }
+
     }
 
     private void getNoticeRequest(){
@@ -85,7 +102,8 @@ public class MainActivity extends AppCompatActivity implements Constants {
     private class btnClick implements View.OnClickListener
     {
         String sAction;
-        public btnClick(String sAction)
+
+        public void setAction(String sAction)
         {
             this.sAction = sAction;
         }
@@ -94,7 +112,9 @@ public class MainActivity extends AppCompatActivity implements Constants {
         public void onClick(View view) {
             if(sAction.equals("continue"))
             {
-                startActivity(new Intent(MainActivity.this, ChargeBackActivity.class));
+                Intent intent = new Intent(MainActivity.this, ChargeBackActivity.class);
+                intent.putExtra("URL", mContinueLink);
+                startActivity(intent);
             }
             else if(sAction.equals("cancel"))
             {
@@ -109,43 +129,17 @@ public class MainActivity extends AppCompatActivity implements Constants {
     private class ExecRequest extends AsyncTask<String, Void, String>
     {
         int mStep;
-        private String doGetRequest(String sURL)
-        {
-            String response = "";
-            try{
-                URL url = new URL(sURL);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-                conn.setRequestMethod("GET");
-
-                int responseCode = conn.getResponseCode();
-
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response += inputLine;
-                }
-                in.close();
-            }
-            catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return response;
-        }
 
         @Override
         protected String doInBackground(String... strings) {
+            HttpRequest request = new HttpRequest();
+
             if(strings[1].equals("first"))
                 mStep = 0;
             else if(strings[1].equals("second"))
                 mStep = 1;
 
-            return doGetRequest(strings[0]);
+            return request.doGetRequest(strings[0]);
         }
 
         @Override
@@ -153,6 +147,8 @@ public class MainActivity extends AppCompatActivity implements Constants {
             if(mStep == 0) {
                 JSonFirstUrlReader jr = new JSonFirstUrlReader();
                 mLinkNotification = jr.getFirstURL(s);
+
+                //Call the Notice URL to fill UI controls
                 getNoticeRequest();
             }
             else if(mStep == 1)

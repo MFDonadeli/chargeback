@@ -3,4 +3,9 @@
 
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="block_card">Bloqueamos preventivamente o seu cartão.</string>
+    <string name="unblock_card">Cartão desbloqueado, recomendamos mantê-lo bloqueado.</string>
+    <string name="cancel_charge_back_btn">Cancelar</string>
+    <string name="ok_charge_back_btn">Contestar</string>
+
 </resources>

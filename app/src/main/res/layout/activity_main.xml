@@ -13,23 +13,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/txtTitle"
-            android:textColor="@color/title" />
+            android:textColor="@color/title"
+            android:padding="30dp"
+            android:textSize="@dimen/title_font_size"
+            android:gravity="center_vertical|center_horizontal" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/txtDescription"
-            android:textColor="@color/texts"/>
+            android:textColor="@color/texts"
+            android:lineSpacingMultiplier="1.5"
+            android:padding="15dp"/>
         <View style="@style/Divider"/>
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/btnPrimaryAction"
+            android:padding="40dp"
             android:background="?android:attr/selectableItemBackground"/>
         <View style="@style/Divider"/>
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/btnSecondaryAction"
+            android:padding="40dp"
             android:background="?android:attr/selectableItemBackground"/>
 
     </LinearLayout>
