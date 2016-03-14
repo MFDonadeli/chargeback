@@ -27,6 +27,8 @@ public class ChargeBackActivity extends AppCompatActivity {
     private String mBlockUrl;
     private String mUnblockUrl;
     private String mSelfUrl;
+    private String mReasonId;
+    private String mReasonResponse;
 
     private TextView txtTitle;
     private ImageView imgLock;
@@ -151,19 +153,27 @@ public class ChargeBackActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String s) {
-            JSonChargeBackUrlReader jr = new JSonChargeBackUrlReader();
-            String[] mReturn = jr.getReturn(s);
+            if(mCont == 1) {
+                JSonChargeBackUrlReader jr = new JSonChargeBackUrlReader();
+                String[] mReturn = jr.getReturn(s);
 
-            mCommentHint = mReturn[0];
-            mTitle = mReturn[1];
-            mAutoBlock = mReturn[2].equals("true") ? true : false;
-            mRecognizedTitle = mReturn[4];
-            mCardTitle = mReturn[6];
-            mBlockUrl = mReturn[7];
-            mUnblockUrl = mReturn[8];
-            mSelfUrl = mReturn[9];
+                mCommentHint = mReturn[0];
+                mTitle = mReturn[1];
+                mAutoBlock = mReturn[2].equals("true") ? true : false;
+                mReasonId = mReturn[3];
+                mRecognizedTitle = mReturn[4];
+                mReasonResponse = mReturn[5];
+                mCardTitle = mReturn[6];
+                mBlockUrl = mReturn[7];
+                mUnblockUrl = mReturn[8];
+                mSelfUrl = mReturn[9];
 
-            setContent();
+                setContent();
+            }
+            else if(mCont == 3)
+            {
+
+            }
         }
     }
 
@@ -173,7 +183,7 @@ public class ChargeBackActivity extends AppCompatActivity {
         public void onClick(View view) {
             if(view.getId() == R.id.btnCBPrimaryAction)
             {
-                //send Json
+                sendChargeBack();
             }
             else if(view.getId() == R.id.btnCBSecondaryAction)
             {
@@ -184,5 +194,27 @@ public class ChargeBackActivity extends AppCompatActivity {
 
             }
         }
+    }
+
+    private void sendChargeBack() {
+        JSonChargeBackWriter js = new JSonChargeBackWriter();
+        js.createObject();
+        js.setString("comment", txtDetails.getText().toString());
+        js.setString("reason_details");
+        js.createArray();
+        js.createObject();
+        js.setString("id", mReasonId);
+        js.setString("response", switchRecognized.isChecked());
+        js.endObject();
+        js.createObject();
+        js.setString("id", mReasonResponse);
+        js.setString("response", switchCard.isChecked());
+        js.endObject();
+        js.endArray();
+        js.endObject();
+
+        String sText = js.getJsonText();
+        sText = "";
+
     }
 }
