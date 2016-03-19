@@ -3,11 +3,14 @@ package br.com.mfdonadeli.chargeback;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -66,6 +69,9 @@ public class ChargeBackActivity extends AppCompatActivity {
         btnPrimaryAction.setOnClickListener(new btnClick());
         btnSecondaryAction.setOnClickListener(new btnClick());
 
+        switchCard.setOnCheckedChangeListener(new switchChange());
+        switchRecognized.setOnCheckedChangeListener(new switchChange());
+
         getRequest();
     }
 
@@ -81,11 +87,12 @@ public class ChargeBackActivity extends AppCompatActivity {
         txtTitle.setText(mTitle);
         switchRecognized.setText(mRecognizedTitle);
         switchCard.setText(mCardTitle);
-        txtLock.setText(getResources().getString(R.string.unblock_card));
         imgLock.setImageBitmap(setLockBitmap());
 
         btnPrimaryAction.setText(getResources().getString(R.string.ok_charge_back_btn));
         btnSecondaryAction.setText(getResources().getString(R.string.cancel_charge_back_btn));
+
+        if(mAutoBlock) postToLock(true);
     }
 
     private Bitmap setLockBitmap() {
@@ -94,12 +101,12 @@ public class ChargeBackActivity extends AppCompatActivity {
 
         if(mCardBlocked) {
             bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_chargeback_lock);
-            postToLock(true);
+            txtLock.setText(getResources().getString(R.string.block_card));
         }
         else
         {
             bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_chargeback_unlock);
-            postToLock(false);
+            txtLock.setText(getResources().getString(R.string.unblock_card));
         }
 
         scaled = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() / 2, bitmap.getHeight() / 2, true);
@@ -170,11 +177,24 @@ public class ChargeBackActivity extends AppCompatActivity {
 
                 setContent();
             }
+            else if(mCont == 2)
+            {
+                mCardBlocked = !mCardBlocked;
+                setUIBlockCard();
+            }
             else if(mCont == 3)
             {
-
+                ChangeBackOk();
             }
         }
+    }
+
+    private void ChangeBackOk() {
+
+    }
+
+    private void setUIBlockCard() {
+        imgLock.setImageBitmap(setLockBitmap());
     }
 
     private class btnClick implements View.OnClickListener {
@@ -191,7 +211,7 @@ public class ChargeBackActivity extends AppCompatActivity {
             }
             else if(view.getId() == R.id.imgCBLock)
             {
-
+                postToLock(!mCardBlocked);
             }
         }
     }
@@ -199,7 +219,7 @@ public class ChargeBackActivity extends AppCompatActivity {
     private void sendChargeBack() {
         JSonChargeBackWriter js = new JSonChargeBackWriter();
         js.createObject();
-        js.setString("comment", txtDetails.getText().toString());
+        js.setString("comment", TextUtils.htmlEncode(txtDetails.getText().toString()));
         js.setString("reason_details");
         js.createArray();
         js.createObject();
@@ -214,7 +234,19 @@ public class ChargeBackActivity extends AppCompatActivity {
         js.endObject();
 
         String sText = js.getJsonText();
-        sText = "";
 
+        String[] params = {mSelfUrl, "contest", sText};
+        new ExecRequest().execute(params);
+
+    }
+
+    private class switchChange implements CompoundButton.OnCheckedChangeListener {
+        @Override
+        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+            if(b)
+                compoundButton.setTextColor(ContextCompat.getColor(ChargeBackActivity.this, R.color.green));
+            else
+                compoundButton.setTextColor(ContextCompat.getColor(ChargeBackActivity.this, R.color.texts));
+        }
     }
 }
