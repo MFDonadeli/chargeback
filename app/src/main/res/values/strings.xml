@@ -7,5 +7,8 @@
     <string name="unblock_card">Cartão desbloqueado, recomendamos mantê-lo bloqueado.</string>
     <string name="cancel_charge_back_btn">Cancelar</string>
     <string name="ok_charge_back_btn">Contestar</string>
+    <string name="dialog_title">Contestação de compra recebida</string>
+    <string name="dialog_description">Fique de olho no seu email! Nos próximos 3 dias você deverá receber um primeiro retorno sobre sua contestação.</string>
+    <string name="close">Fechar</string>
 
 </resources>

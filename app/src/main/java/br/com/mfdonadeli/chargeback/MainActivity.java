@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
         {
             mBtnPrimaryAction.setTextSize(TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.enabled_font_size));
             mBtnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.enabled_purple));
-            mBtnSecondaryAction.setTextColor(ContextCompat.getColor(this, R.color.disabled_gray));
+            mBtnSecondaryAction.setTextColor(ContextCompat.getColor(this, R.color.close_gray));
         }
 
     }

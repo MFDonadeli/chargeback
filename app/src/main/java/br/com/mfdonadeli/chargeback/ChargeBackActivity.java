@@ -1,14 +1,22 @@
 package br.com.mfdonadeli.chargeback;
 
+import android.app.Dialog;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.Html;
+import android.text.InputType;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.Window;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -17,6 +25,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
+
+import java.sql.BatchUpdateException;
 
 public class ChargeBackActivity extends AppCompatActivity {
 
@@ -73,6 +83,37 @@ public class ChargeBackActivity extends AppCompatActivity {
         switchRecognized.setOnCheckedChangeListener(new switchChange());
 
         getRequest();
+
+        txtDetails.setInputType(InputType.TYPE_CLASS_TEXT);
+        txtDetails.setLines(10); // desired number of lines
+        txtDetails.setHorizontallyScrolling(false);
+        txtDetails.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+        txtDetails.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                enableContestButton();
+            }
+        });
+
+    }
+
+    private void enableContestButton() {
+        btnPrimaryAction.setEnabled(txtDetails.getText().toString().trim().length() > 0);
+        if(btnPrimaryAction.isEnabled())
+            btnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.enabled_purple));
+        else
+            btnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.disabled_gray));
     }
 
     private void getRequest() {
@@ -179,18 +220,43 @@ public class ChargeBackActivity extends AppCompatActivity {
             }
             else if(mCont == 2)
             {
-                mCardBlocked = !mCardBlocked;
-                setUIBlockCard();
+                JSonStatusReader jsonReader = new JSonStatusReader();
+                if(jsonReader.isOK(s)) {
+                    mCardBlocked = !mCardBlocked;
+                    setUIBlockCard();
+                }
+                else {
+                    //Try again later
+                }
             }
             else if(mCont == 3)
             {
-                ChangeBackOk();
+                JSonStatusReader jsonReader = new JSonStatusReader();
+                if(jsonReader.isOK(s)) {
+                    ChangeBackOk();
+                }
+                else {
+                    //Try again later
+                }
             }
         }
     }
 
     private void ChangeBackOk() {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.chargeback_ok_dialog);
 
+        final Button btnClose = (Button) dialog.findViewById(R.id.btnDialogClose);
+        btnClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+                finish();
+            }
+        });
+
+        dialog.show();
     }
 
     private void setUIBlockCard() {
