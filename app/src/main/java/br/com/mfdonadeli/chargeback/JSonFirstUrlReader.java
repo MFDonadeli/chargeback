@@ -1,14 +1,23 @@
 package br.com.mfdonadeli.chargeback;
 
 import android.util.JsonReader;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.StringReader;
 
 /**
  * Created by mfdonadeli on 3/10/16.
+ *
+ * Class to parse the starter Json
+ *
+ * Json Sample:
+ * <pre>   {@code
+ *  {"links":{"notice":{"href":"https://nu-mobile-hiring.herokuapp.com/notice"}}}
+ * } </pre>
  */
 public class JSonFirstUrlReader {
+    final String JSON_LOG = "CHARGEBACK JSonFirst";
     private String mUrl;
     public String getFirstURL(String sJsonStr)
     {
@@ -30,6 +39,8 @@ public class JSonFirstUrlReader {
             reader.endObject();
         } catch (IOException e) {
             e.printStackTrace();
+            Log.d(JSON_LOG, "readFirstArray. Mensagem: " + e.toString());
+            mUrl = "--ERROR--";
         }
     }
 
@@ -45,6 +56,8 @@ public class JSonFirstUrlReader {
             reader.endObject();
         } catch (IOException e) {
             e.printStackTrace();
+            Log.d(JSON_LOG, "readLinks. Mensagem: " + e.toString());
+            mUrl = "--ERROR--";
         }
     }
 
@@ -54,12 +67,14 @@ public class JSonFirstUrlReader {
             reader.beginObject();
             while(reader.hasNext()) {
                 String name = reader.nextName();
-                if(name.equals("href"))
+                if (name.equals("href"))
                     mUrl = reader.nextString();
             }
             reader.endObject();
         } catch (IOException e) {
             e.printStackTrace();
+            Log.d(JSON_LOG, "readHref. Mensagem: " + e.toString());
+            mUrl = "--ERROR--";
         }
     }
 }

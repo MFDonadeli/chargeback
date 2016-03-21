@@ -1,13 +1,12 @@
 package br.com.mfdonadeli.chargeback;
 
 import android.app.Dialog;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.Editable;
 import android.text.Html;
 import android.text.InputType;
@@ -16,17 +15,13 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
-
-import org.w3c.dom.Text;
-
-import java.sql.BatchUpdateException;
+import android.widget.Toast;
 
 public class ChargeBackActivity extends AppCompatActivity {
 
@@ -108,6 +103,9 @@ public class ChargeBackActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Enable Contest button (primary action), if details is not empty
+     */
     private void enableContestButton() {
         btnPrimaryAction.setEnabled(txtDetails.getText().toString().trim().length() > 0);
         if(btnPrimaryAction.isEnabled())
@@ -116,6 +114,9 @@ public class ChargeBackActivity extends AppCompatActivity {
             btnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.disabled_gray));
     }
 
+    /**
+     * Make request to fill UI
+     */
     private void getRequest() {
         String[] params = new String[2];
         params[0] = mRequestUrl;
@@ -123,6 +124,9 @@ public class ChargeBackActivity extends AppCompatActivity {
         new ExecRequest().execute(params);
     }
 
+    /**
+     * Fill UI Controls with strings
+     */
     private void setContent() {
         txtDetails.setHint(Html.fromHtml(mCommentHint));
         txtTitle.setText(mTitle);
@@ -136,9 +140,12 @@ public class ChargeBackActivity extends AppCompatActivity {
         if(mAutoBlock) postToLock(true);
     }
 
+    /**
+     * Set Lock or Unlock bitmap. It depends if card is locked or not
+     * @return Bitmap to be loaded in ImageView
+     */
     private Bitmap setLockBitmap() {
         Bitmap bitmap, scaled;
-        bitmap = null;
 
         if(mCardBlocked) {
             bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_chargeback_lock);
@@ -155,6 +162,10 @@ public class ChargeBackActivity extends AppCompatActivity {
         return scaled;
     }
 
+    /**
+     * Call lock or unlock requests
+     * @param b: Card will be locked: true/false
+     */
     private void postToLock(boolean b) {
         if(b)
         {
@@ -174,75 +185,10 @@ public class ChargeBackActivity extends AppCompatActivity {
         }
     }
 
-    private class ExecRequest extends AsyncTask<String, Void, String> {
-
-        int mCont = 0;
-        @Override
-        protected String doInBackground(String... strings) {
-            String sRet = "";
-            if(strings[1].equals("get_content")) {
-                HttpRequest request = new HttpRequest();
-                sRet = request.doGetRequest(strings[0]);
-                mCont = 1;
-            }
-            else if(strings[1].equals("block") || strings[1].equals("unblock")){
-                HttpRequest request = new HttpRequest();
-                sRet = request.doPostRequest(strings[0]);
-                mCont = 2;
-            }
-            else if(strings[1].equals("contest"))
-            {
-                HttpRequest request = new HttpRequest();
-                sRet = request.sendPostRequest(strings[0], strings[2]);
-                mCont = 3;
-            }
-            return sRet;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            if(mCont == 1) {
-                JSonChargeBackUrlReader jr = new JSonChargeBackUrlReader();
-                String[] mReturn = jr.getReturn(s);
-
-                mCommentHint = mReturn[0];
-                mTitle = mReturn[1];
-                mAutoBlock = mReturn[2].equals("true") ? true : false;
-                mReasonId = mReturn[3];
-                mRecognizedTitle = mReturn[4];
-                mReasonResponse = mReturn[5];
-                mCardTitle = mReturn[6];
-                mBlockUrl = mReturn[7];
-                mUnblockUrl = mReturn[8];
-                mSelfUrl = mReturn[9];
-
-                setContent();
-            }
-            else if(mCont == 2)
-            {
-                JSonStatusReader jsonReader = new JSonStatusReader();
-                if(jsonReader.isOK(s)) {
-                    mCardBlocked = !mCardBlocked;
-                    setUIBlockCard();
-                }
-                else {
-                    //Try again later
-                }
-            }
-            else if(mCont == 3)
-            {
-                JSonStatusReader jsonReader = new JSonStatusReader();
-                if(jsonReader.isOK(s)) {
-                    ChangeBackOk();
-                }
-                else {
-                    //Try again later
-                }
-            }
-        }
-    }
-
-    private void ChangeBackOk() {
+    /**
+     * If ChargeBack request is OK, call the dialog to show the confirmation to user
+     */
+    private void ChargeBackOk() {
         final Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.chargeback_ok_dialog);
@@ -259,29 +205,16 @@ public class ChargeBackActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    /**
+     * Call method to update lock ImageView
+     */
     private void setUIBlockCard() {
         imgLock.setImageBitmap(setLockBitmap());
     }
 
-    private class btnClick implements View.OnClickListener {
-
-        @Override
-        public void onClick(View view) {
-            if(view.getId() == R.id.btnCBPrimaryAction)
-            {
-                sendChargeBack();
-            }
-            else if(view.getId() == R.id.btnCBSecondaryAction)
-            {
-                finish();
-            }
-            else if(view.getId() == R.id.imgCBLock)
-            {
-                postToLock(!mCardBlocked);
-            }
-        }
-    }
-
+    /**
+     * Create the JSon to be send and make the request to send it
+     */
     private void sendChargeBack() {
         JSonChargeBackWriter js = new JSonChargeBackWriter();
         js.createObject();
@@ -301,11 +234,132 @@ public class ChargeBackActivity extends AppCompatActivity {
 
         String sText = js.getJsonText();
 
-        String[] params = {mSelfUrl, "contest", sText};
-        new ExecRequest().execute(params);
-
+        if(sText.equals("--ERROR--")){
+            Toast.makeText(getApplicationContext(), R.string.error_chargeback, Toast.LENGTH_LONG).show();
+        }
+        else {
+            String[] params = {mSelfUrl, "contest", sText};
+            new ExecRequest().execute(params);
+        }
     }
 
+
+    /**
+     * AsyncTask to perform HttpRequests, and call JsonParser after Http return results
+     */
+    private class ExecRequest extends AsyncTask<String, Void, String> {
+
+        int mCont = 0;
+        @Override
+        protected String doInBackground(String... strings) {
+            String sRet = "";
+            switch (strings[1]) {
+                case "get_content": {
+                    HttpRequest request = new HttpRequest();
+                    sRet = request.doGetRequest(strings[0]);
+                    mCont = 1;
+                    break;
+                }
+                case "block":
+                case "unblock": {
+                    HttpRequest request = new HttpRequest();
+                    sRet = request.doPostRequest(strings[0]);
+                    mCont = 2;
+                    break;
+                }
+                case "contest": {
+                    HttpRequest request = new HttpRequest();
+                    sRet = request.sendJsonRequest(strings[0], strings[2]);
+                    mCont = 3;
+                    break;
+                }
+            }
+            return sRet;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            if(s.equals("--ERROR--") || s.trim().isEmpty()){
+                Toast.makeText(getApplicationContext(), R.string.error_internet, Toast.LENGTH_LONG).show();
+                //End if cannot get String from ChargeBack Json
+                if(mCont == 1) finish();
+                return;
+            }
+
+            if(mCont == 1) {
+                JSonChargeBackUrlReader jr = new JSonChargeBackUrlReader();
+                String[] mReturn = jr.getReturn(s);
+
+                if(mReturn == null)
+                {
+                    Toast.makeText(getApplicationContext(), R.string.error_internet, Toast.LENGTH_LONG).show();
+                    finish();
+                }
+                else {
+                    mCommentHint = mReturn[0];
+                    mTitle = mReturn[1];
+                    mAutoBlock = mReturn[2].equals("true");
+                    mReasonId = mReturn[3];
+                    mRecognizedTitle = mReturn[4];
+                    mReasonResponse = mReturn[5];
+                    mCardTitle = mReturn[6];
+                    mBlockUrl = mReturn[7];
+                    mUnblockUrl = mReturn[8];
+                    mSelfUrl = mReturn[9];
+
+                    //Fill UI controls
+                    setContent();
+                }
+            }
+            else if(mCont == 2)
+            {
+                JSonStatusReader jsonReader = new JSonStatusReader();
+                if(jsonReader.isOK(s)) {
+                    mCardBlocked = !mCardBlocked;
+                    setUIBlockCard();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), R.string.error_block, Toast.LENGTH_LONG).show();
+                }
+            }
+            else if(mCont == 3)
+            {
+                JSonStatusReader jsonReader = new JSonStatusReader();
+                if(jsonReader.isOK(s)) {
+                    ChargeBackOk();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), R.string.error_chargeback, Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+    /**
+     * Click listeners for two button and ImageView (lock or unlock card)
+     */
+    private class btnClick implements View.OnClickListener {
+
+        @Override
+        public void onClick(View view) {
+            if(view.getId() == R.id.btnCBPrimaryAction)
+            {
+                sendChargeBack();
+            }
+            else if(view.getId() == R.id.btnCBSecondaryAction)
+            {
+                finish();
+            }
+            else if(view.getId() == R.id.imgCBLock)
+            {
+                postToLock(!mCardBlocked);
+            }
+        }
+    }
+
+    /**
+     * Change color of switch controls
+     */
     private class switchChange implements CompoundButton.OnCheckedChangeListener {
         @Override
         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {

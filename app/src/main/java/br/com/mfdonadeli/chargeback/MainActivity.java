@@ -1,26 +1,18 @@
 package br.com.mfdonadeli.chargeback;
 
-import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.util.TypedValue;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import android.widget.Toast;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -67,6 +59,9 @@ public class MainActivity extends AppCompatActivity implements Constants {
         mBtnSecondaryAction.setOnClickListener(secondClickListener);
     }
 
+    /**
+     * Call the firt URL Request. This method will call the only hardcoded URL
+     */
     private void getFirstRequest() {
         String[] params = new String[2];
         params[0] = BASEURL;
@@ -74,6 +69,9 @@ public class MainActivity extends AppCompatActivity implements Constants {
         new ExecRequest().execute(params);
     }
 
+    /**
+     * Fill UI Controls with strings
+     */
     private void setContents()
     {
         txtTitle.setText(Html.fromHtml(mTitle));
@@ -92,6 +90,9 @@ public class MainActivity extends AppCompatActivity implements Constants {
 
     }
 
+    /**
+     * Call Notice URL Request to fill the UI and get next URLs
+     */
     private void getNoticeRequest(){
         String[] params = new String[2];
         params[0] = mLinkNotification;
@@ -99,6 +100,30 @@ public class MainActivity extends AppCompatActivity implements Constants {
         new ExecRequest().execute(params);
     }
 
+    private void showRetryDialog()
+    {
+        final AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+        dialog.create();
+        dialog.setTitle(R.string.error_internet_retry);
+        dialog.setPositiveButton("Tentar Novamente", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                getFirstRequest();
+            }
+        });
+        dialog.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                finish();
+            }
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Click Listener class for both buttons
+     */
     private class btnClick implements View.OnClickListener
     {
         String sAction;
@@ -148,23 +173,36 @@ public class MainActivity extends AppCompatActivity implements Constants {
                 JSonFirstUrlReader jr = new JSonFirstUrlReader();
                 mLinkNotification = jr.getFirstURL(s);
 
-                //Call the Notice URL to fill UI controls
-                getNoticeRequest();
+                if(mLinkNotification.equals("--ERROR--") || mLinkNotification.trim().isEmpty())
+                {
+                    showRetryDialog();
+                }
+                else {
+
+                    //Call the Notice URL to fill UI controls
+                    getNoticeRequest();
+                }
             }
             else if(mStep == 1)
             {
                 JSonNoticeUrlReader jr = new JSonNoticeUrlReader();
                 String[] mReturn = jr.getReturn(s);
 
-                mTitle = mReturn[0];
-                mDescription = mReturn[1];
-                mPrimaryActionTitle = mReturn[2];
-                mPrimaryActionAction = mReturn[3];
-                mSecondaryActionTitle = mReturn[4];
-                mSecondaryActionAction = mReturn[5];
-                mContinueLink = mReturn[6];
+                if(mReturn == null){
+                    showRetryDialog();
+                }
+                else {
+                    mTitle = mReturn[0];
+                    mDescription = mReturn[1];
+                    mPrimaryActionTitle = mReturn[2];
+                    mPrimaryActionAction = mReturn[3];
+                    mSecondaryActionTitle = mReturn[4];
+                    mSecondaryActionAction = mReturn[5];
+                    mContinueLink = mReturn[6];
 
-                setContents();
+                    //fill UI controls
+                    setContents();
+                }
             }
         }
     }

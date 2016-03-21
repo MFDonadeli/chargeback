@@ -10,5 +10,9 @@
     <string name="dialog_title">Contestação de compra recebida</string>
     <string name="dialog_description">Fique de olho no seu email! Nos próximos 3 dias você deverá receber um primeiro retorno sobre sua contestação.</string>
     <string name="close">Fechar</string>
+    <string name="error_block">Não foi possível fazer o bloqueio do cartão. Tente novamente mais tarde.</string>
+    <string name="error_chargeback">Não foi possível enviar contestação. Tente novamente mais tarde.</string>
+    <string name="error_internet">Erro conectando à Internet. Tente novamente mais tarde.</string>
+    <string name="error_internet_retry">Não foi possível fazer conexão com a Internet.</string>
 
 </resources>
