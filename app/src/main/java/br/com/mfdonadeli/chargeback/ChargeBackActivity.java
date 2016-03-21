@@ -23,20 +23,19 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import br.com.mfdonadeli.chargeback.http.HttpRequest;
+import br.com.mfdonadeli.chargeback.json.JSonChargeBackUrlReader;
+import br.com.mfdonadeli.chargeback.json.JSonChargeBackWriter;
+import br.com.mfdonadeli.chargeback.json.JSonStatusReader;
+
 public class ChargeBackActivity extends AppCompatActivity {
 
-    private String mRequestUrl;
+    private final int CHARGEBACK_REQUEST = 1;
+    private final int CHARGEBACK_BLOCK_UNBLOCK_CARD_REQUEST = 2;
+    private final int CHARGEBACK_SEND_CONTEST = 3;
 
-    private String mCommentHint;
-    private String mTitle;
-    private boolean mAutoBlock;
-    private String mRecognizedTitle;
-    private String mCardTitle;
-    private String mBlockUrl;
-    private String mUnblockUrl;
-    private String mSelfUrl;
-    private String mReasonId;
-    private String mReasonResponse;
+    private ChargeBackVars chargeBackVars;
+    private String mRequestUrl;
 
     private TextView txtTitle;
     private ImageView imgLock;
@@ -128,16 +127,16 @@ public class ChargeBackActivity extends AppCompatActivity {
      * Fill UI Controls with strings
      */
     private void setContent() {
-        txtDetails.setHint(Html.fromHtml(mCommentHint));
-        txtTitle.setText(mTitle);
-        switchRecognized.setText(mRecognizedTitle);
-        switchCard.setText(mCardTitle);
+        txtDetails.setHint(Html.fromHtml(chargeBackVars.getCommentHint()));
+        txtTitle.setText(chargeBackVars.getTitle());
+        switchRecognized.setText(chargeBackVars.getReasonTitle(0));
+        switchCard.setText(chargeBackVars.getReasonTitle(1));
         imgLock.setImageBitmap(setLockBitmap());
 
         btnPrimaryAction.setText(getResources().getString(R.string.ok_charge_back_btn));
         btnSecondaryAction.setText(getResources().getString(R.string.cancel_charge_back_btn));
 
-        if(mAutoBlock) postToLock(true);
+        if(chargeBackVars.isAutoBlock()) postToLock(true);
     }
 
     /**
@@ -171,7 +170,7 @@ public class ChargeBackActivity extends AppCompatActivity {
         {
             //Try to lock card
             String[] params = new String[2];
-            params[0] = mBlockUrl;
+            params[0] = chargeBackVars.getBlockUrl();
             params[1] = "block";
             new ExecRequest().execute(params);
         }
@@ -179,7 +178,7 @@ public class ChargeBackActivity extends AppCompatActivity {
         {
             //Try to unlock card
             String[] params = new String[2];
-            params[0] = mUnblockUrl;
+            params[0] = chargeBackVars.getUnblockUrl();
             params[1] = "unblock";
             new ExecRequest().execute(params);
         }
@@ -220,15 +219,7 @@ public class ChargeBackActivity extends AppCompatActivity {
         js.createObject();
         js.setString("comment", TextUtils.htmlEncode(txtDetails.getText().toString()));
         js.setString("reason_details");
-        js.createArray();
-        js.createObject();
-        js.setString("id", mReasonId);
-        js.setString("response", switchRecognized.isChecked());
-        js.endObject();
-        js.createObject();
-        js.setString("id", mReasonResponse);
-        js.setString("response", switchCard.isChecked());
-        js.endObject();
+        js.createArray(chargeBackVars.getReasonDetails());
         js.endArray();
         js.endObject();
 
@@ -238,7 +229,7 @@ public class ChargeBackActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), R.string.error_chargeback, Toast.LENGTH_LONG).show();
         }
         else {
-            String[] params = {mSelfUrl, "contest", sText};
+            String[] params = {chargeBackVars.getSelfUrl(), "contest", sText};
             new ExecRequest().execute(params);
         }
     }
@@ -249,7 +240,7 @@ public class ChargeBackActivity extends AppCompatActivity {
      */
     private class ExecRequest extends AsyncTask<String, Void, String> {
 
-        int mCont = 0;
+        int mStep = 0;
         @Override
         protected String doInBackground(String... strings) {
             String sRet = "";
@@ -257,20 +248,20 @@ public class ChargeBackActivity extends AppCompatActivity {
                 case "get_content": {
                     HttpRequest request = new HttpRequest();
                     sRet = request.doGetRequest(strings[0]);
-                    mCont = 1;
+                    mStep = CHARGEBACK_REQUEST;
                     break;
                 }
                 case "block":
                 case "unblock": {
                     HttpRequest request = new HttpRequest();
                     sRet = request.doPostRequest(strings[0]);
-                    mCont = 2;
+                    mStep = CHARGEBACK_BLOCK_UNBLOCK_CARD_REQUEST;
                     break;
                 }
                 case "contest": {
                     HttpRequest request = new HttpRequest();
                     sRet = request.sendJsonRequest(strings[0], strings[2]);
-                    mCont = 3;
+                    mStep = CHARGEBACK_SEND_CONTEST;
                     break;
                 }
             }
@@ -282,36 +273,25 @@ public class ChargeBackActivity extends AppCompatActivity {
             if(s.equals("--ERROR--") || s.trim().isEmpty()){
                 Toast.makeText(getApplicationContext(), R.string.error_internet, Toast.LENGTH_LONG).show();
                 //End if cannot get String from ChargeBack Json
-                if(mCont == 1) finish();
+                if(mStep == CHARGEBACK_REQUEST) finish();
                 return;
             }
 
-            if(mCont == 1) {
+            if(mStep == CHARGEBACK_REQUEST) {
                 JSonChargeBackUrlReader jr = new JSonChargeBackUrlReader();
-                String[] mReturn = jr.getReturn(s);
+                chargeBackVars = jr.getReturn(s);
 
-                if(mReturn == null)
+                if(chargeBackVars.hasError())
                 {
                     Toast.makeText(getApplicationContext(), R.string.error_internet, Toast.LENGTH_LONG).show();
                     finish();
                 }
                 else {
-                    mCommentHint = mReturn[0];
-                    mTitle = mReturn[1];
-                    mAutoBlock = mReturn[2].equals("true");
-                    mReasonId = mReturn[3];
-                    mRecognizedTitle = mReturn[4];
-                    mReasonResponse = mReturn[5];
-                    mCardTitle = mReturn[6];
-                    mBlockUrl = mReturn[7];
-                    mUnblockUrl = mReturn[8];
-                    mSelfUrl = mReturn[9];
-
                     //Fill UI controls
                     setContent();
                 }
             }
-            else if(mCont == 2)
+            else if(mStep == CHARGEBACK_BLOCK_UNBLOCK_CARD_REQUEST)
             {
                 JSonStatusReader jsonReader = new JSonStatusReader();
                 if(jsonReader.isOK(s)) {
@@ -322,7 +302,7 @@ public class ChargeBackActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), R.string.error_block, Toast.LENGTH_LONG).show();
                 }
             }
-            else if(mCont == 3)
+            else if(mStep == CHARGEBACK_SEND_CONTEST)
             {
                 JSonStatusReader jsonReader = new JSonStatusReader();
                 if(jsonReader.isOK(s)) {
@@ -367,6 +347,11 @@ public class ChargeBackActivity extends AppCompatActivity {
                 compoundButton.setTextColor(ContextCompat.getColor(ChargeBackActivity.this, R.color.green));
             else
                 compoundButton.setTextColor(ContextCompat.getColor(ChargeBackActivity.this, R.color.texts));
+
+            if(compoundButton.getId() == R.id.switchCBmerchant_recognized)
+                chargeBackVars.setReasonValue(0, b);
+            else if(compoundButton.getId() == R.id.switchCBcard_in_possession)
+                chargeBackVars.setReasonValue(1, b);
         }
     }
 }

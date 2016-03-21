@@ -1,4 +1,4 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.json;
 
 import android.util.JsonReader;
 import android.util.Log;
@@ -16,7 +16,7 @@ import java.io.StringReader;
  * }</pre>
  */
 public class JSonStatusReader {
-    final String JSON_LOG = "CHARGEBACK JSonStatus";
+    private final String JSON_LOG = "CHARGEBACK JSonStatus";
     public boolean isOK(String sJsonStr){
         JsonReader reader = new JsonReader(new StringReader(sJsonStr));
         return readFirstArray(reader);

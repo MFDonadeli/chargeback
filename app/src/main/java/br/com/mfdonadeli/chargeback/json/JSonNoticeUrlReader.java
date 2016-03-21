@@ -1,10 +1,12 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.json;
 
 import android.util.JsonReader;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.StringReader;
+
+import br.com.mfdonadeli.chargeback.NotificationVars;
 
 /**
  * Created by mfdonadeli on 3/11/16.
@@ -26,10 +28,11 @@ import java.io.StringReader;
  */
 public class JSonNoticeUrlReader {
     final String JSON_LOG = "CHARGEBACK JSonNotice";
-    private String[] mReturn;
+    private NotificationVars mReturn;
+
     int mCont = 0;
-    public String[] getReturn(String sJsonStr){
-        mReturn = new String[7];
+    public NotificationVars getReturn(String sJsonStr){
+        mReturn = new NotificationVars();
         JsonReader reader = new JsonReader(new StringReader(sJsonStr));
         readFirstArray(reader);
         return mReturn;
@@ -42,16 +45,21 @@ public class JSonNoticeUrlReader {
                 String name = reader.nextName();
                 switch (name) {
                     case "title":
-                        mReturn[mCont++] = reader.nextString();
+                        mReturn.setTitle(reader.nextString());
                         break;
                     case "description":
-                        mReturn[mCont++] = reader.nextString();
+                        mReturn.setDescription(reader.nextString());
                         break;
-                    case "primary_action":
-                        readAction(reader);
+                    case "primary_action": {
+                        String[] ret = readAction(reader);
+                        mReturn.setPrimaryActionTitle(ret[0]);
+                        mReturn.setPrimaryActionAction(ret[1]);
                         break;
+                    }
                     case "secondary_action":
-                        readAction(reader);
+                        String[] ret = readAction(reader);
+                        mReturn.setSecondaryActionTitle(ret[0]);
+                        mReturn.setSecondaryActionAction(ret[1]);
                         break;
                     case "links":
                         readLinks(reader);
@@ -62,27 +70,29 @@ public class JSonNoticeUrlReader {
         } catch (IOException e) {
             Log.d(JSON_LOG, "readFirstArray. Mensagem: " + e.toString());
             e.printStackTrace();
-            mReturn = null;
+            mReturn.setError();
         }
     }
 
-    private void readAction(JsonReader reader)
+    private String[] readAction(JsonReader reader)
     {
+        String[] ret = new String[2];
         try {
             reader.beginObject();
             while(reader.hasNext()) {
                 String name = reader.nextName();
                 if(name.equals("title"))
-                    mReturn[mCont++] = reader.nextString();
+                    ret[0] = reader.nextString();
                 else if(name.equals("action"))
-                    mReturn[mCont++] = reader.nextString();
+                    ret[1] = reader.nextString();
             }
             reader.endObject();
         } catch (IOException e) {
             Log.d(JSON_LOG, "readAction. Mensagem: " + e.toString());
             e.printStackTrace();
-            mReturn = null;
+            mReturn.setError();
         }
+        return ret;
     }
 
     private void readLinks(JsonReader reader)
@@ -98,7 +108,7 @@ public class JSonNoticeUrlReader {
         } catch (IOException e) {
             Log.d(JSON_LOG, "readLinks. Mensagem: " + e.toString());
             e.printStackTrace();
-            mReturn = null;
+            mReturn.setError();
         }
     }
 
@@ -109,13 +119,13 @@ public class JSonNoticeUrlReader {
             while(reader.hasNext()) {
                 String name = reader.nextName();
                 if(name.equals("href"))
-                    mReturn[mCont++] = reader.nextString();
+                    mReturn.setContinueLink(reader.nextString());
             }
             reader.endObject();
         } catch (IOException e) {
             Log.d(JSON_LOG, "readHref. Mensagem: " + e.toString());
             e.printStackTrace();
-            mReturn = null;
+            mReturn.setError();
         }
     }
 }

@@ -1,4 +1,4 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.json;
 
 import android.util.JsonReader;
 import android.util.Log;
@@ -17,7 +17,7 @@ import java.io.StringReader;
  * } </pre>
  */
 public class JSonFirstUrlReader {
-    final String JSON_LOG = "CHARGEBACK JSonFirst";
+    private final String JSON_LOG = "CHARGEBACK JSonFirst";
     private String mUrl;
     public String getFirstURL(String sJsonStr)
     {

@@ -1,10 +1,13 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.json;
 
 import android.util.JsonReader;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.HashMap;
+
+import br.com.mfdonadeli.chargeback.ChargeBackVars;
 
 /**
  * Created by mfdonadeli on 3/12/16.
@@ -26,16 +29,13 @@ import java.io.StringReader;
  * }</pre>
  */
 public class JSonChargeBackUrlReader {
-    final String JSON_LOG = "CHARGEBACK JSonCB";
-    private String[] mReturn;
-    int mCont = 0;
-    boolean bError = false;
-    public String[] getReturn(String sJsonStr){
-        mReturn = new String[10];
+    private final String JSON_LOG = "CHARGEBACK JSonCB";
+    private ChargeBackVars mReturn;
+
+    public ChargeBackVars getReturn(String sJsonStr){
+        mReturn = new ChargeBackVars();
         JsonReader reader = new JsonReader(new StringReader(sJsonStr));
         readFirstArray(reader);
-
-        if(bError) mReturn = null;
 
         return mReturn;
     }
@@ -47,16 +47,16 @@ public class JSonChargeBackUrlReader {
                 String name = reader.nextName();
                 switch (name) {
                     case "comment_hint":
-                        mReturn[mCont++] = reader.nextString();
+                        mReturn.setCommentHint(reader.nextString());
                         break;
                     case "id":
-                        reader.skipValue();//nothing
+                        mReturn.setId(reader.nextString());
                         break;
                     case "title":
-                        mReturn[mCont++] = reader.nextString();
+                        mReturn.setTitle(reader.nextString());
                         break;
                     case "autoblock":
-                        mReturn[mCont++] = String.valueOf(reader.nextBoolean());
+                        mReturn.setAutoBlock(reader.nextBoolean());
                         break;
                     case "reason_details":
                         readReasonDetails(reader);
@@ -70,12 +70,15 @@ public class JSonChargeBackUrlReader {
         } catch (IOException e) {
             e.printStackTrace();
             Log.d(JSON_LOG, "readFirstArray. Mensagem: " + e.toString());
-            bError = true;
+            mReturn.setError();
         }
 
     }
 
     private void readReasonDetails(JsonReader reader) {
+        String sId, sTitle;
+        sId = sTitle = "";
+
         try {
             reader.beginArray();
             while(reader.hasNext()) {
@@ -84,18 +87,19 @@ public class JSonChargeBackUrlReader {
                 {
                     String name = reader.nextName();
                     if(name.equals("id"))
-                        mReturn[mCont++] = reader.nextString();
+                        sId = reader.nextString();
                     else if(name.equals("title"))
-                        mReturn[mCont++] = reader.nextString();
+                        sTitle = reader.nextString();
                 }
                 reader.endObject();
+                mReturn.setReasonDetail(sId, sTitle);
             }
             reader.endArray();
 
         } catch (IOException e) {
             e.printStackTrace();
             Log.d(JSON_LOG, "readReasonDetails. Mensagem: " + e.toString());
-            bError = true;
+            mReturn.setError();
         }
     }
 
@@ -105,20 +109,28 @@ public class JSonChargeBackUrlReader {
             while(reader.hasNext())
             {
                 String name = reader.nextName();
-                if(name.equals("block_card") || name.equals("unblock_card") || name.equals("self"))
-                {
-                    readHref(reader);
+                switch (name) {
+                    case "block_card":
+                        mReturn.setBlockUrl(readHref(reader));
+                        break;
+                    case "unblock_card":
+                        mReturn.setUnblockUrl(readHref(reader));
+                        break;
+                    case "self":
+                        mReturn.setSelfUrl(readHref(reader));
+                        break;
                 }
             }
             reader.endObject();
         } catch (IOException e) {
             e.printStackTrace();
             Log.d(JSON_LOG, "readLink. Mensagem: " + e.toString());
-            bError = true;
+            mReturn.setError();
         }
     }
 
-    private void readHref(JsonReader reader) {
+    private String readHref(JsonReader reader) {
+        String sRet = "";
         try {
             reader.beginObject();
             while(reader.hasNext())
@@ -126,14 +138,15 @@ public class JSonChargeBackUrlReader {
                 String name = reader.nextName();
                 if(name.equals("href"))
                 {
-                    mReturn[mCont++] = reader.nextString();
+                    sRet = reader.nextString();
                 }
             }
             reader.endObject();
         } catch (IOException e) {
             e.printStackTrace();
             Log.d(JSON_LOG, "readHref. Mensagem: " + e.toString());
-            bError = true;
+            mReturn.setError();
         }
+        return sRet;
     }
 }

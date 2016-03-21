@@ -1,12 +1,13 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.json;
 
 import android.util.JsonWriter;
 import android.util.Log;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+
+import br.com.mfdonadeli.chargeback.ChargeBackVars;
 
 /**
  * Created by mfdonadeli on 3/13/16.
@@ -24,10 +25,10 @@ import java.io.StringWriter;
  * }</pre>
  */
 public class JSonChargeBackWriter {
-    final String JSON_LOG = "CHARGEBACK JsonWrite";
-    StringWriter strWriter;
-    JsonWriter writer;
-    boolean bError = false;
+    private final String JSON_LOG = "CHARGEBACK JsonWrite";
+    private StringWriter strWriter;
+    private JsonWriter writer;
+    private boolean bError = false;
 
     public JSonChargeBackWriter(){
         strWriter = new StringWriter();
@@ -62,6 +63,17 @@ public class JSonChargeBackWriter {
             Log.d(JSON_LOG, "createArray. Mensagem: " + e.toString());
             e.printStackTrace();
             bError = true;
+        }
+    }
+
+    public void createArray(ArrayList<ChargeBackVars.ReasonDetails> reasonDetails) {
+        createArray();
+        for(ChargeBackVars.ReasonDetails details : reasonDetails  )
+        {
+            createObject();
+            setString("id", details.getId());
+            setString("response", details.isValue());
+            endObject();
         }
     }
 

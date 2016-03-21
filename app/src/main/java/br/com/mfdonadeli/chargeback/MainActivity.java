@@ -12,25 +12,23 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import br.com.mfdonadeli.chargeback.http.HttpRequest;
+import br.com.mfdonadeli.chargeback.json.JSonFirstUrlReader;
+import br.com.mfdonadeli.chargeback.json.JSonNoticeUrlReader;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class MainActivity extends AppCompatActivity implements Constants {
+public class MainActivity extends AppCompatActivity {
+
+    private static final String BASEURL = "https://nu-mobile-hiring.herokuapp.com/";
+    private static int FIRST_REQUEST = 0;
+    private static int NOTICE_REQUEST = 1;
 
     private String mLinkNotification;
-    private String mTitle;
-    private String mDescription;
-
-    private String mPrimaryActionTitle;
-    private String mPrimaryActionAction;
-
-    private String mSecondaryActionTitle;
-    private String mSecondaryActionAction;
-
-    private String mContinueLink;
+    private NotificationVars notificationVars;
 
     private TextView txtTitle;
     private TextView txtDescription;
@@ -74,14 +72,14 @@ public class MainActivity extends AppCompatActivity implements Constants {
      */
     private void setContents()
     {
-        txtTitle.setText(Html.fromHtml(mTitle));
-        txtDescription.setText(Html.fromHtml(mDescription));
-        mBtnPrimaryAction.setText(mPrimaryActionTitle);
-        firstClickListener.setAction(mPrimaryActionAction);
-        mBtnSecondaryAction.setText(mSecondaryActionTitle);
-        secondClickListener.setAction(mSecondaryActionAction);
+        txtTitle.setText(Html.fromHtml(notificationVars.getTitle()));
+        txtDescription.setText(Html.fromHtml(notificationVars.getDescription()));
+        mBtnPrimaryAction.setText(notificationVars.getPrimaryActionTitle());
+        firstClickListener.setAction(notificationVars.getPrimaryActionAction());
+        mBtnSecondaryAction.setText(notificationVars.getSecondaryActionTitle());
+        secondClickListener.setAction(notificationVars.getSecondaryActionAction());
 
-        if(mPrimaryActionAction.equals("continue"))
+        if(notificationVars.getPrimaryActionAction().equals("continue"))
         {
             mBtnPrimaryAction.setTextSize(TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.enabled_font_size));
             mBtnPrimaryAction.setTextColor(ContextCompat.getColor(this, R.color.enabled_purple));
@@ -138,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
             if(sAction.equals("continue"))
             {
                 Intent intent = new Intent(MainActivity.this, ChargeBackActivity.class);
-                intent.putExtra("URL", mContinueLink);
+                intent.putExtra("URL", notificationVars.getContinueLink());
                 startActivity(intent);
             }
             else if(sAction.equals("cancel"))
@@ -160,20 +158,21 @@ public class MainActivity extends AppCompatActivity implements Constants {
             HttpRequest request = new HttpRequest();
 
             if(strings[1].equals("first"))
-                mStep = 0;
+                mStep = FIRST_REQUEST;
             else if(strings[1].equals("second"))
-                mStep = 1;
+                mStep = NOTICE_REQUEST;
 
             return request.doGetRequest(strings[0]);
         }
 
         @Override
         protected void onPostExecute(String s) {
-            if(mStep == 0) {
+            if(mStep == FIRST_REQUEST) {
                 JSonFirstUrlReader jr = new JSonFirstUrlReader();
                 mLinkNotification = jr.getFirstURL(s);
 
-                if(mLinkNotification.equals("--ERROR--") || mLinkNotification.trim().isEmpty())
+                if(mLinkNotification.equals("--ERROR--")
+                        || mLinkNotification.trim().isEmpty())
                 {
                     showRetryDialog();
                 }
@@ -183,23 +182,15 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     getNoticeRequest();
                 }
             }
-            else if(mStep == 1)
+            else if(mStep == NOTICE_REQUEST)
             {
                 JSonNoticeUrlReader jr = new JSonNoticeUrlReader();
-                String[] mReturn = jr.getReturn(s);
+                notificationVars = jr.getReturn(s);
 
-                if(mReturn == null){
+                if(notificationVars.hasError()){
                     showRetryDialog();
                 }
                 else {
-                    mTitle = mReturn[0];
-                    mDescription = mReturn[1];
-                    mPrimaryActionTitle = mReturn[2];
-                    mPrimaryActionAction = mReturn[3];
-                    mSecondaryActionTitle = mReturn[4];
-                    mSecondaryActionAction = mReturn[5];
-                    mContinueLink = mReturn[6];
-
                     //fill UI controls
                     setContents();
                 }

@@ -1,4 +1,4 @@
-package br.com.mfdonadeli.chargeback;
+package br.com.mfdonadeli.chargeback.http;
 
 import android.util.Log;
 
@@ -17,7 +17,7 @@ import java.net.URL;
  * Class to do all HTTP requests Post, Get and SendJson (ChargeBack)
  */
 public class HttpRequest {
-    final String HTTP_REQUEST_LOG = "CHARGEBACK HttpRequest";
+    private final String HTTP_REQUEST_LOG = "CHARGEBACK HttpRequest";
 
     /**
      * Do a Get Request to sURL
