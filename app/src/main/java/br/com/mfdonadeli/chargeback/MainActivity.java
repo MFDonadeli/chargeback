@@ -1,6 +1,7 @@
 package br.com.mfdonadeli.chargeback;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -151,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private class ExecRequest extends AsyncTask<String, Void, String>
     {
+        private ProgressDialog pDlg;
         int mStep;
 
         @Override
@@ -163,6 +165,13 @@ public class MainActivity extends AppCompatActivity {
                 mStep = NOTICE_REQUEST;
 
             return request.doGetRequest(strings[0]);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            pDlg = new ProgressDialog(MainActivity.this);
+            pDlg.setMessage("Carregando... Aguarde");
+            pDlg.show();
         }
 
         @Override
@@ -195,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
                     setContents();
                 }
             }
+            pDlg.dismiss();
         }
     }
 }

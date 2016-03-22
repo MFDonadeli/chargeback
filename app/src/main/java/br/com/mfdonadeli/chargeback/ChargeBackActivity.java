@@ -1,6 +1,7 @@
 package br.com.mfdonadeli.chargeback;
 
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -239,6 +240,7 @@ public class ChargeBackActivity extends AppCompatActivity {
      * AsyncTask to perform HttpRequests, and call JsonParser after Http return results
      */
     private class ExecRequest extends AsyncTask<String, Void, String> {
+        private ProgressDialog pDlg;
 
         int mStep = 0;
         @Override
@@ -253,12 +255,14 @@ public class ChargeBackActivity extends AppCompatActivity {
                 }
                 case "block":
                 case "unblock": {
+                    pDlg.dismiss();
                     HttpRequest request = new HttpRequest();
                     sRet = request.doPostRequest(strings[0]);
                     mStep = CHARGEBACK_BLOCK_UNBLOCK_CARD_REQUEST;
                     break;
                 }
                 case "contest": {
+                    pDlg.dismiss();
                     HttpRequest request = new HttpRequest();
                     sRet = request.sendJsonRequest(strings[0], strings[2]);
                     mStep = CHARGEBACK_SEND_CONTEST;
@@ -266,6 +270,13 @@ public class ChargeBackActivity extends AppCompatActivity {
                 }
             }
             return sRet;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            pDlg = new ProgressDialog(ChargeBackActivity.this);
+            pDlg.setMessage("Carregando... Aguarde");
+            pDlg.show();
         }
 
         @Override
@@ -290,6 +301,7 @@ public class ChargeBackActivity extends AppCompatActivity {
                     //Fill UI controls
                     setContent();
                 }
+                pDlg.dismiss();
             }
             else if(mStep == CHARGEBACK_BLOCK_UNBLOCK_CARD_REQUEST)
             {
